@@ -1,7 +1,7 @@
 # automatic-lights
 Group 24's ECE 362 project automating light and temperature regulation using the STM32
 
-Group Name:
+**Group Name:**
 Automatic Lights 
 
 **Purdue Username:**
