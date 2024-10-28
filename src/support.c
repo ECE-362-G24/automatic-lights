@@ -317,3 +317,84 @@ void game(void)
         }
     }
 }
+
+
+
+
+//////////lab 5-----------------------------------------------------------
+
+// Read an entire floating-point number.
+float getfloat(void)
+{
+    int num = 0;
+    int digits = 0;
+    int decimal = 0;
+    int enter = 0;
+    clear_display();
+    set_digit_segments(7, font['0']);
+    while(!enter) {
+        int key = get_keypress();
+        if (digits == 8) {
+            if (key != '#')
+                continue;
+        }
+        switch(key) {
+        case '0':
+            if (digits == 0)
+                continue;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            num = num*10 + key-'0';
+            decimal <<= 1;
+            digits += 1;
+            if (digits == 1)
+                set_digit_segments(7, font[key]);
+            else
+                append_segments(font[key]);
+            break;
+        case '*':
+            if (decimal == 0) {
+                decimal = 1;
+                dot();
+            }
+            break;
+        case '#':
+            enter = 1;
+            break;
+        default: continue; // ABCD
+        }
+    }
+    float f = num;
+    while (decimal) {
+        decimal >>= 1;
+        if (decimal)
+            f = f/10.0;
+    }
+    return f;
+}
+
+// Read an RGB specification.
+int getrgb(void)
+{
+    int rgb = 0;
+    clear_display();
+    for(int n=0; n<6; n++) {
+        int key = get_keypress();
+        int digit;
+        if (key < '0' || key > '9') {
+            n--; // ignore it and do over
+            continue;
+        }
+        digit = key - '0';
+        rgb |= digit << (20 - 4*n);
+        set_digit_segments(n, font[key]);
+    }
+    return rgb;
+}

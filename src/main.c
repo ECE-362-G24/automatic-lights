@@ -128,6 +128,10 @@ void drive_bb(void) {
         }
 }
 
+
+
+
+
 //============================================================================
 // Configure Timer 15 for an update rate of 1 kHz.
 // Trigger the DMA channel on each update.
@@ -342,6 +346,68 @@ void spi1_enable_dma(void) {
     DMA1_Channel3->CCR |= DMA_CCR_EN;
 }
 
+
+
+void setup_tim1(void) {
+    // Generally the steps are similar to those in setup_tim3
+    // except we will need to set the MOE bit in BDTR. 
+    // Be sure to do so ONLY after enabling the RCC clock to TIM1.
+    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+    RCC->AHBENR  |= RCC_AHBENR_GPIOAEN;
+    
+    GPIOA->MODER &= ~(GPIO_MODER_MODER8 | GPIO_MODER_MODER9 | GPIO_MODER_MODER10 | GPIO_MODER_MODER11);
+    GPIOA->MODER |= (GPIO_MODER_MODER8_1 | GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1 | GPIO_MODER_MODER11_1);
+    
+    GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL8 | GPIO_AFRH_AFSEL9 | GPIO_AFRH_AFSEL10 | GPIO_AFRH_AFSEL11);
+    GPIOA->AFR[1] |= (0x2 << GPIO_AFRH_AFSEL8_Pos) | (0x2 << GPIO_AFRH_AFSEL9_Pos) | (0x2 << GPIO_AFRH_AFSEL10_Pos) | (0x2 << GPIO_AFRH_AFSEL11_Pos);
+
+    TIM1->BDTR |= TIM_BDTR_MOE;
+
+    TIM1->PSC = 0;
+    TIM1->ARR = 2399;
+
+    TIM1->CCMR1 |= (0x6 << TIM_CCMR1_OC1M_Pos) | TIM_CCMR1_OC1PE;
+    TIM1->CCMR1 |= (0x6 << TIM_CCMR1_OC2M_Pos) | TIM_CCMR1_OC2PE;
+    TIM1->CCMR2 |= (0x6 << TIM_CCMR2_OC3M_Pos) | TIM_CCMR2_OC3PE;    
+    TIM1->CCMR2 |= (0x6 << TIM_CCMR2_OC4M_Pos) | TIM_CCMR2_OC4PE;    
+
+    
+    TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E;
+
+    TIM1->CR1 |= TIM_CR1_CEN;
+}
+
+int getrgb(void);
+
+// Helper function for you
+// Accept a byte in BCD format and convert it to decimal
+uint8_t bcd2dec(uint8_t bcd) {
+    // Lower digit
+    uint8_t dec = bcd & 0xF;
+
+    // Higher digit
+    dec += 10 * (bcd >> 4);
+    return dec;
+}
+
+void setrgb(int rgb) {
+    uint8_t b = bcd2dec(rgb & 0xFF);
+    uint8_t g = bcd2dec((rgb >> 8) & 0xFF);
+    uint8_t r = bcd2dec((rgb >> 16) & 0xFF);
+
+    // TODO: Assign values to TIM1->CCRx registers
+    // Remember these are all percentages
+    // Also, LEDs are on when the corresponding PWM output is low
+    // so you might want to invert the numbers.
+
+    uint32_t ARR = TIM1->ARR + 1;
+
+    TIM1->CCR1 = ARR * (100 - r) / 100; 
+    TIM1->CCR2 = ARR * (100 - g) / 100;
+    TIM1->CCR3 = ARR * (100 - b) / 100;
+}
+
+
 //===========================================================================
 // Main function
 //===========================================================================
@@ -413,3 +479,6 @@ int main(void) {
     // Game on!  The goal is to score 100 points.
     game();
 }
+
+
+
