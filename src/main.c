@@ -22,7 +22,7 @@ void nano_wait(unsigned int);
 void game(void);
 void internal_clock();
 void check_wiring();
-void autotest();
+//void autotest();
 
 //===========================================================================
 // Configure GPIOC
@@ -408,7 +408,7 @@ int main(void) {
 #endif
 
     // Uncomment when you are ready to generate a code.
-    autotest();
+    //autotest();
 
     // Game on!  The goal is to score 100 points.
     game();
