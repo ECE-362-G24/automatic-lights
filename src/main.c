@@ -473,6 +473,16 @@ int main(void) {
     spi1_enable_dma();
 #endif
 
+    for(;;) {
+        char key = get_keypress();
+        if (key == 'A')
+            set_freq(0,getfloat());
+        if (key == 'B')
+            set_freq(1,getfloat());
+        if (key == 'D')
+            setrgb(getrgb());
+    }
+
     // Uncomment when you are ready to generate a code.
     //autotest();
 
