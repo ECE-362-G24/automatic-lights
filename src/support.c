@@ -48,51 +48,51 @@ const char font[] = {
     0x54, 0x5c, 0x73, 0x7b, 0x50, 0x6d, 0x78, 0x1c, 0x00, 0x00, 0x00, 0x6e, 0x00
 };
 
-extern uint16_t msg[8];
+// extern uint16_t msg[8];
 
-void set_digit_segments(int digit, char val) {
-    msg[digit] = (digit << 8) | val;
-}
+// void set_digit_segments(int digit, char val) {
+//     msg[digit] = (digit << 8) | val;
+// }
 
-void print(const char str[])
-{
-    const char *p = str;
-    for(int i=0; i<8; i++) {
-        if (*p == '\0') {
-            msg[i] = (i<<8);
-        } else {
-            msg[i] = (i<<8) | font[*p & 0x7f] | (*p & 0x80);
-            p++;
-        }
-    }
-}
+// void print(const char str[])
+// {
+//     const char *p = str;
+//     for(int i=0; i<8; i++) {
+//         if (*p == '\0') {
+//             msg[i] = (i<<8);
+//         } else {
+//             msg[i] = (i<<8) | font[*p & 0x7f] | (*p & 0x80);
+//             p++;
+//         }
+//     }
+// }
 
-void printfloat(float f)
-{
-    char buf[10];
-    snprintf(buf, 10, "%f", f);
-    for(int i=1; i<10; i++) {
-        if (buf[i] == '.') {
-            // Combine the decimal point into the previous digit.
-            buf[i-1] |= 0x80;
-            memcpy(&buf[i], &buf[i+1], 10-i-1);
-        }
-    }
-    print(buf);
-}
+// void printfloat(float f)
+// {
+//     char buf[10];
+//     snprintf(buf, 10, "%f", f);
+//     for(int i=1; i<10; i++) {
+//         if (buf[i] == '.') {
+//             // Combine the decimal point into the previous digit.
+//             buf[i-1] |= 0x80;
+//             memcpy(&buf[i], &buf[i+1], 10-i-1);
+//         }
+//     }
+//     print(buf);
+// }
 
-void append_segments(char val) {
-    for (int i = 0; i < 7; i++) {
-        set_digit_segments(i, msg[i+1] & 0xff);
-    }
-    set_digit_segments(7, val);
-}
+// void append_segments(char val) {
+//     for (int i = 0; i < 7; i++) {
+//         set_digit_segments(i, msg[i+1] & 0xff);
+//     }
+//     set_digit_segments(7, val);
+// }
 
-void clear_display(void) {
-    for (int i = 0; i < 8; i++) {
-        msg[i] = msg[i] & 0xff00;
-    }
-}
+// void clear_display(void) {
+//     for (int i = 0; i < 8; i++) {
+//         msg[i] = msg[i] & 0xff00;
+//     }
+// }
 
 // 16 history bytes.  Each byte represents the last 8 samples of a button.
 uint8_t hist[16];
@@ -157,106 +157,106 @@ char get_keypress() {
     return event & 0x7f;
 }
 
-void show_keys(void)
-{
-    char buf[] = "        ";
-    for(;;) {
-        char event = get_key_event();
-        memmove(buf, &buf[1], 7);
-        buf[7] = event;
-        print(buf);
-    }
-}
+// void show_keys(void)
+// {
+//     char buf[] = "        ";
+//     for(;;) {
+//         char event = get_key_event();
+//         memmove(buf, &buf[1], 7);
+//         buf[7] = event;
+//         print(buf);
+//     }
+// }
 
 // Turn on the dot of the rightmost display element.
-void dot()
-{
-    msg[7] |= 0x80;
-}
+// void dot()
+// {
+//     msg[7] |= 0x80;
+// }
 
-extern uint16_t display[34];
-void spi1_dma_display1(const char *str)
-{
-    for(int i=0; i<16; i++) {
-        if (str[i])
-            display[i+1] = 0x200 + str[i];
-        else {
-            // End of string.  Pad with spaces.
-            for(int j=i; j<16; j++)
-                display[j+1] = 0x200 + ' ';
-            break;
-        }
-    }
-}
+// extern uint16_t display[34];
+// void spi1_dma_display1(const char *str)
+// {
+//     for(int i=0; i<16; i++) {
+//         if (str[i])
+//             display[i+1] = 0x200 + str[i];
+//         else {
+//             // End of string.  Pad with spaces.
+//             for(int j=i; j<16; j++)
+//                 display[j+1] = 0x200 + ' ';
+//             break;
+//         }
+//     }
+// }
 
-void spi1_dma_display2(const char *str)
-{
-    for(int i=0; i<16; i++) {
-        if (str[i])
-            display[i+18] = 0x200 + str[i];
-        else {
-            // End of string.  Pad with spaces.
-            for(int j=i; j<16; j++)
-                display[j+18] = 0x200 + ' ';
-            break;
-        }
-    }
-}
+// void spi1_dma_display2(const char *str)
+// {
+//     for(int i=0; i<16; i++) {
+//         if (str[i])
+//             display[i+18] = 0x200 + str[i];
+//         else {
+//             // End of string.  Pad with spaces.
+//             for(int j=i; j<16; j++)
+//                 display[j+18] = 0x200 + ' ';
+//             break;
+//         }
+//     }
+//}
 
-int score = 0;
-char disp1[17] = "                ";
-char disp2[17] = "                ";
-volatile int pos = 0;
-void TIM17_IRQHandler(void)
-{
-    TIM17->SR &= ~TIM_SR_UIF;
-    memmove(disp1, &disp1[1], 16);
-    memmove(disp2, &disp2[1], 16);
-    if (pos == 0) {
-        if (disp1[0] != ' ')
-            score -= 1;
-        if (disp2[0] != ' ')
-            score += 1;
-        disp1[0] = '>';
-    } else {
-        if (disp2[0] != ' ')
-            score -= 1;
-        if (disp1[0] != ' ')
-            score += 1;
-        disp2[0] = '>';
-    }
-    int create = random() & 3;
-    if (create == 0) { // one in four chance
-        int line = random() & 1;
-        if (line == 0) { // pick a line
-            disp1[15] = 'x';
-            disp2[15] = ' ';
-        } else {
-            disp1[15] = ' ';
-            disp2[15] = 'x';
-        }
-    } else {
-        disp1[15] = ' ';
-        disp2[15] = ' ';
-    }
-    if (pos == 0)
-        disp1[0] = '>';
-    else
-        disp2[0] = '>';
-    if (score >= 100) {
-        print("Score100");
-        spi1_dma_display1("Game over");
-        spi1_dma_display2("You win");
-        NVIC->ICER[0] = 1<<TIM17_IRQn;
-        return;
-    }
-    char buf[9];
-    snprintf(buf, 9, "Score% 3d", score);
-    print(buf);
-    spi1_dma_display1(disp1);
-    spi1_dma_display2(disp2);
-    TIM17->ARR = 250 - 1 - 2*score;
-}
+// int score = 0;
+// char disp1[17] = "                ";
+// char disp2[17] = "                ";
+// volatile int pos = 0;
+// void TIM17_IRQHandler(void)
+// {
+//     TIM17->SR &= ~TIM_SR_UIF;
+//     memmove(disp1, &disp1[1], 16);
+//     memmove(disp2, &disp2[1], 16);
+//     if (pos == 0) {
+//         if (disp1[0] != ' ')
+//             score -= 1;
+//         if (disp2[0] != ' ')
+//             score += 1;
+//         disp1[0] = '>';
+//     } else {
+//         if (disp2[0] != ' ')
+//             score -= 1;
+//         if (disp1[0] != ' ')
+//             score += 1;
+//         disp2[0] = '>';
+//     }
+//     int create = random() & 3;
+//     if (create == 0) { // one in four chance
+//         int line = random() & 1;
+//         if (line == 0) { // pick a line
+//             disp1[15] = 'x';
+//             disp2[15] = ' ';
+//         } else {
+//             disp1[15] = ' ';
+//             disp2[15] = 'x';
+//         }
+//     } else {
+//         disp1[15] = ' ';
+//         disp2[15] = ' ';
+//     }
+//     if (pos == 0)
+//         disp1[0] = '>';
+//     else
+//         disp2[0] = '>';
+//     if (score >= 100) {
+//         print("Score100");
+//         spi1_dma_display1("Game over");
+//         spi1_dma_display2("You win");
+//         NVIC->ICER[0] = 1<<TIM17_IRQn;
+//         return;
+//     }
+//     char buf[9];
+//     snprintf(buf, 9, "Score% 3d", score);
+//     print(buf);
+//     spi1_dma_display1(disp1);
+//     spi1_dma_display2(disp2);
+//     TIM17->ARR = 250 - 1 - 2*score;
+// }
 
 void init_tim17(void)
 {
@@ -268,55 +268,55 @@ void init_tim17(void)
     TIM17->CR1 |= TIM_CR1_CEN;
 }
 
-void init_spi2(void);
-void spi2_setup_dma(void);
-void spi2_enable_dma(void);
-void init_spi1(void);
-void spi1_init_oled(void);
-void spi1_setup_dma(void);
-void spi1_enable_dma(void);
+// void init_spi2(void);
+// void spi2_setup_dma(void);
+// void spi2_enable_dma(void);
+// void init_spi1(void);
+// void spi1_init_oled(void);
+// void spi1_setup_dma(void);
+// void spi1_enable_dma(void);
 
-void game(void)
-{
-    print("Score  0");
-    init_spi2();
-    spi2_setup_dma();
-    spi2_enable_dma();
-    spi1_dma_display1("Hit key to play");
-    spi1_dma_display2("Hit A/B to move");
-    init_spi1();
-    spi1_init_oled();
-    spi1_setup_dma();
-    spi1_enable_dma();
-    init_tim17(); // start timer
-    get_keypress(); // Wait for key to start
-    spi1_dma_display1(">               ");
-    spi1_dma_display2("                ");
-    // Use the timer counter as random seed...
-    srandom(TIM17->CNT);
-    // Then enable interrupt...
-    NVIC->ISER[0] = 1<<TIM17_IRQn;
-    for(;;) {
-        char key = get_keypress();
-        if (key == 'A' || key == 'B') {
-            // If the A or B key is pressed, disable interrupts while
-            // we update the display.
-            asm("cpsid i");
-            if (key == 'A') {
-                pos = 0;
-                disp1[0] = '>';
-                disp2[0] = ' ';
-            } else {
-                pos = 1;
-                disp1[0] = ' ';
-                disp2[0] = '>';
-            }
-            spi1_dma_display1(disp1);
-            spi1_dma_display2(disp2);
-            asm("cpsie i");
-        }
-    }
-}
+// void game(void)
+// {
+//     print("Score  0");
+//     init_spi2();
+//     spi2_setup_dma();
+//     spi2_enable_dma();
+//     spi1_dma_display1("Hit key to play");
+//     spi1_dma_display2("Hit A/B to move");
+//     init_spi1();
+//     spi1_init_oled();
+//     spi1_setup_dma();
+//     spi1_enable_dma();
+//     init_tim17(); // start timer
+//     get_keypress(); // Wait for key to start
+//     spi1_dma_display1(">               ");
+//     spi1_dma_display2("                ");
+//     // Use the timer counter as random seed...
+//     srandom(TIM17->CNT);
+//     // Then enable interrupt...
+//     NVIC->ISER[0] = 1<<TIM17_IRQn;
+//     for(;;) {
+//         char key = get_keypress();
+//         if (key == 'A' || key == 'B') {
+//             // If the A or B key is pressed, disable interrupts while
+//             // we update the display.
+//             asm("cpsid i");
+//             if (key == 'A') {
+//                 pos = 0;
+//                 disp1[0] = '>';
+//                 disp2[0] = ' ';
+//             } else {
+//                 pos = 1;
+//                 disp1[0] = ' ';
+//                 disp2[0] = '>';
+//             }
+//             spi1_dma_display1(disp1);
+//             spi1_dma_display2(disp2);
+//             asm("cpsie i");
+//         }
+//     }
+// }
 
 
 
@@ -324,61 +324,61 @@ void game(void)
 //////////lab 5-----------------------------------------------------------
 
 // Read an entire floating-point number.
-float getfloat(void)
-{
-    int num = 0;
-    int digits = 0;
-    int decimal = 0;
-    int enter = 0;
-    clear_display();
-    set_digit_segments(7, font['0']);
-    while(!enter) {
-        int key = get_keypress();
-        if (digits == 8) {
-            if (key != '#')
-                continue;
-        }
-        switch(key) {
-        case '0':
-            if (digits == 0)
-                continue;
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-            num = num*10 + key-'0';
-            decimal <<= 1;
-            digits += 1;
-            if (digits == 1)
-                set_digit_segments(7, font[key]);
-            else
-                append_segments(font[key]);
-            break;
-        case '*':
-            if (decimal == 0) {
-                decimal = 1;
-                dot();
-            }
-            break;
-        case '#':
-            enter = 1;
-            break;
-        default: continue; // ABCD
-        }
-    }
-    float f = num;
-    while (decimal) {
-        decimal >>= 1;
-        if (decimal)
-            f = f/10.0;
-    }
-    return f;
-}
+// float getfloat(void)
+// {
+//     int num = 0;
+//     int digits = 0;
+//     int decimal = 0;
+//     int enter = 0;
+//     clear_display();
+//     set_digit_segments(7, font['0']);
+//     while(!enter) {
+//         int key = get_keypress();
+//         if (digits == 8) {
+//             if (key != '#')
+//                 continue;
+//         }
+//         switch(key) {
+//         case '0':
+//             if (digits == 0)
+//                 continue;
+//         case '1':
+//         case '2':
+//         case '3':
+//         case '4':
+//         case '5':
+//         case '6':
+//         case '7':
+//         case '8':
+//         case '9':
+//             num = num*10 + key-'0';
+//             decimal <<= 1;
+//             digits += 1;
+//             if (digits == 1)
+//                 set_digit_segments(7, font[key]);
+//             else
+//                 append_segments(font[key]);
+//             break;
+//         case '*':
+//             if (decimal == 0) {
+//                 decimal = 1;
+//                 dot();
+//             }
+//             break;
+//         case '#':
+//             enter = 1;
+//             break;
+//         default: continue; // ABCD
+//         }
+//     }
+//     float f = num;
+//     while (decimal) {
+//         decimal >>= 1;
+//         if (decimal)
+//             f = f/10.0;
+//     }
+//     return f;
+// }
 
 // Read an RGB specification.
 int getrgb(void)
