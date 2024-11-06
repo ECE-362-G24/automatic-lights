@@ -24,6 +24,7 @@ const char* username = "kdtaneja";
 uint32_t temperature = 0;
 uint32_t brightness = 0;
 int fan_status = 0;
+int led_status = 1;
 
 //===========================================================================
 // Configure GPIOC
@@ -37,8 +38,12 @@ void enable_ports(void) {
     RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
     //resetting all ports and setting 2-3 for output
     GPIOA->MODER &= ~0x000003fc;
-    GPIOA->MODER |= 0x00000030;
-    
+    GPIOA->MODER |= 0x0000017c;
+    //Pin 0 -> 00
+    //Pin 1 -> 11
+    //Pin 2 -> 11
+    //Pin 3 -> 01
+    //Pin 4 -> 01
     //  ADC FOR PORTS 1-2
     //enabling high speed clock
     RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
@@ -62,6 +67,44 @@ int bcsum = 0;
 int boxcar[BCSIZE];
 int bcn = 0;
 
+void handle_fan(int temp, int fan){
+    if(fan){
+        if(temp < 20){
+            setn(3,0);
+            fan = 0;
+        }
+    }
+    else{
+        if(temp > 25){
+            setn(3,1);
+            fan = 1;
+        }
+    }
+}
+
+void handle_led(int bright, int led){
+    if(led){
+        if(bright > 300){
+            setn(4,0);
+            led = 0;
+        }
+    }
+    else{
+        if(bright < 200){
+            setn(4,1);
+            led = 1;
+        }
+    }
+}
+void togglexn(GPIO_TypeDef *port, int n) {
+  if (port->ODR & (1 << n)){
+    port->ODR &= ~(1 << n);
+  }
+  else{
+    port->ODR |= 1 << n;
+  }
+}
+
 void TIM2_IRQHandler(void) {
     TIM2->SR &= ~TIM_SR_UIF;  
     ADC1->CR |= ADC_CR_ADSTART;
@@ -70,36 +113,35 @@ void TIM2_IRQHandler(void) {
     }
 
     temperature = ADC1->DR;
-    brightness = ADC1->DR; //1970 is default, 2400 is max
+    brightness = ADC1->DR; 
+    brightness -= 2000;
+    if (brightness < 0) brightness = 0;
+    //brightness *= 2;
+    brightness = brightness % 1000;
     
-    handle_fan();
+    if (brightness < 250){
+        setn(3, 1);
+    }
+    else{
+        setn(3, 0);
+    }
+
+    // handle_fan(temperature, fan_status);
+    // handle_led(brightness, led_status);
 
     char str[12];
     itoa(temperature, str, 10);
-    char temp_str[50] = "Temperature: ";
+    char temp_str[50] = "Temp: ";
     strcat(temp_str, str);
     spi1_display2(temp_str); 
 
     char str_2[12];
     itoa(brightness, str_2, 10);
-    char temp_str_2[50] = "Brightness: ";
+    char temp_str_2[50] = "Bright: ";
     strcat(temp_str_2, str_2);
     spi1_display1(temp_str_2);
-    //if (temperature > 1) temperature--;
-    //printf("Temperature: %d", fan_status);
-    //setn(4, 1);
-    
-    // togglexn(GPIOA, 3);
-    // togglexn(GPIOA, 4);
-}
 
-void togglexn(GPIO_TypeDef *port, int n) {
-  if (port->ODR & (1 << n)){
-    port->ODR &= ~(1 << n);
-  }
-  else{
-    port->ODR |= 1 << n;
-  }
+    
 }
 
 void setn(int32_t pin_num, int32_t val) {
@@ -143,7 +185,7 @@ void init_spi1(void) {
     SPI1->CR1 |= SPI_CR1_MSTR;
 
     SPI1->CR2 = SPI_CR2_SSOE | SPI_CR2_NSSP | (0x9 << SPI_CR2_DS_Pos);  
-    SPI1->CR2 |= SPI_CR2_TXDMAEN;
+    //SPI1->CR2 |= SPI_CR2_TXDMAEN;
     SPI1->CR1 &= ~(SPI_CR1_CPOL | SPI_CR1_CPHA);
 
     SPI1->CR1 |= SPI_CR1_SPE;
@@ -187,20 +229,9 @@ void spi1_display2(const char *string) {
 //===========================================================================
 // Main function
 //===========================================================================
-void handle_fan(){
-    if(fan_status){
-        if(temperature < 20){
-            setn(3,0);
-            fan_status = 0;
-        }
-    }
-    else{
-        if(temperature > 25){
-            setn(3,1);
-            fan_status = 1;
-        }
-    }
-}
+
+
+
 int main(void) {
   internal_clock();
 
