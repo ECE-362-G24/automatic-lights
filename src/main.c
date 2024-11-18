@@ -60,7 +60,7 @@ void enable_ports(void) {
     while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) {
     }
     //selecting channel 1
-    ADC1->CHSELR = ADC_CHSELR_CHSEL1; 
+    //ADC1->CHSELR = ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL2; 
     //ADC1->CFGR1 &= ~ADC_CFGR1_RES; //NOT SURE IF WE NEED THIS 
 
 }
@@ -146,7 +146,6 @@ void setup_tim1(void) {
 
 
     TIM1->CR1 |= TIM_CR1_CEN;
-
 }
 
 uint8_t bcd2dec(uint8_t bcd) {
@@ -210,14 +209,13 @@ void TIM2_IRQHandler(void) {
     //DO STUFF
     while ((ADC1->ISR & ADC_ISR_EOC) == 0) {
     }
-
-    temperature = ADC1->DR;
+    ADC1->CHSELR = ADC_CHSELR_CHSEL1;
     brightness = ADC1->DR; 
-    brightness = brightness / 450;
-    if (brightness < 0) brightness = 0;
-    else if (brightness > 500) brightness = 500;
+    //brightness = brightness / 1000;
+    //if (brightness < 0) brightness = 0;
+    if (brightness >= 1000) brightness = 999;
     
-    if (brightness < 4.5){
+    if (brightness < 600){
         setn(3, 1);
         setrgb(0x000000);
     }
@@ -226,21 +224,22 @@ void TIM2_IRQHandler(void) {
         setrgb(~0xf);
     }
 
-    // handle_fan(temperature, fan_status);
-    // handle_led(brightness, led_status);
-
-    char str[12];
-    itoa(temperature, str, 10);
-    char temp_str[50] = "Temp: ";
-    strcat(temp_str, str);
-    spi1_display2(temp_str); 
-
     char str_2[12];
     itoa(brightness, str_2, 10);
-    char temp_str_2[50] = "Bright: ";
+    char temp_str_2[50] = "Bright: "; //temp_str_2 == temporary string 2
     strcat(temp_str_2, str_2);
     spi1_display1(temp_str_2);
 
+    // ADC1->CHSELR = ADC_CHSELR_CHSEL2;
+    // temperature = ADC1->DR;
+    // // handle_fan(temperature, fan_status);
+    // // handle_led(brightness, led_status);
+
+    // char str[12];
+    // itoa(temperature, str, 10);
+    // char temp_str[50] = "Temp: ";
+    // strcat(temp_str, str);
+    // spi1_display2(temp_str); 
     
 }
 
@@ -334,8 +333,6 @@ void spi1_display2(const char *string) {
 
 int main(void) {
   internal_clock();
-
-
   // GPIO enable
   enable_ports();
   // setup keyboard
@@ -353,14 +350,7 @@ int main(void) {
   // }
   //spi1_display2("50");
 
-  uint32_t x;
-  
-
-  // char str[12];
-  // itoa(temperature, str, 10);
-  // char temp_str[50] = "Temperature: ";
-  // strcat(temp_str, str);
-  // spi1_display2(temp_str); 
+  //uint32_t x;
 
 }
 
