@@ -37,16 +37,20 @@ void enable_ports(void) {
     //  4-Output LED
     RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
     //resetting all ports and setting 2-3 for output
-    GPIOA->MODER &= ~0x000003fc;
-    GPIOA->MODER |= 0x0000017c;
+    GPIOA->MODER &= ~0x00ff03fc;
+    GPIOA->MODER |= 0x0015017c;
     //Pin 0 -> 00
     //Pin 1 -> 11
     //Pin 2 -> 11
     //Pin 3 -> 01
     //Pin 4 -> 01
+    //Pin 8 -> 01
+    //Pin 9 -> 01
+    //Pin 10 -> 01
     //  ADC FOR PORTS 1-2
     //enabling high speed clock
-    RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
+    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+    //RCC->APB2ENR |= RCC_APB2ENR_ADC2EN;
     RCC->CR2 |= RCC_CR2_HSI14ON;
     //waiting for clock
     while ((RCC->CR2 & RCC_CR2_HSI14RDY) == 0) {
@@ -56,7 +60,7 @@ void enable_ports(void) {
     while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) {
     }
     //selecting channel 1
-    ADC1->CHSELR = ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL2; 
+    ADC1->CHSELR = ADC_CHSELR_CHSEL1; 
     //ADC1->CFGR1 &= ~ADC_CFGR1_RES; //NOT SURE IF WE NEED THIS 
 
 }
@@ -96,6 +100,101 @@ void handle_led(int bright, int led){
         }
     }
 }
+
+void setup_tim1(void) {
+
+    // Generally the steps are similar to those in setup_tim3
+
+    // except we will need to set the MOE bit in BDTR. 
+
+    // Be sure to do so ONLY after enabling the RCC clock to TIM1.
+
+    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+
+    RCC->AHBENR  |= RCC_AHBENR_GPIOAEN;
+
+    
+
+    GPIOA->MODER &= ~(GPIO_MODER_MODER8 | GPIO_MODER_MODER9 | GPIO_MODER_MODER10 | GPIO_MODER_MODER11);
+
+    GPIOA->MODER |= (GPIO_MODER_MODER8_1 | GPIO_MODER_MODER9_1 | GPIO_MODER_MODER10_1 | GPIO_MODER_MODER11_1);
+
+    
+
+    GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL8 | GPIO_AFRH_AFSEL9 | GPIO_AFRH_AFSEL10 | GPIO_AFRH_AFSEL11);
+
+    GPIOA->AFR[1] |= (0x2 << GPIO_AFRH_AFSEL8_Pos) | (0x2 << GPIO_AFRH_AFSEL9_Pos) | (0x2 << GPIO_AFRH_AFSEL10_Pos) | (0x2 << GPIO_AFRH_AFSEL11_Pos);
+
+
+    TIM1->BDTR |= TIM_BDTR_MOE;
+
+
+    TIM1->PSC = 0;
+
+    TIM1->ARR = 2399;
+
+
+    TIM1->CCMR1 |= (0x6 << TIM_CCMR1_OC1M_Pos) | TIM_CCMR1_OC1PE;
+
+    TIM1->CCMR1 |= (0x6 << TIM_CCMR1_OC2M_Pos) | TIM_CCMR1_OC2PE;
+
+    TIM1->CCMR2 |= (0x6 << TIM_CCMR2_OC3M_Pos) | TIM_CCMR2_OC3PE;    
+
+    TIM1->CCMR2 |= (0x6 << TIM_CCMR2_OC4M_Pos) | TIM_CCMR2_OC4PE;    
+
+    TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E;
+
+
+    TIM1->CR1 |= TIM_CR1_CEN;
+
+}
+
+uint8_t bcd2dec(uint8_t bcd) {
+
+    // Lower digit
+
+    uint8_t dec = bcd & 0xF;
+
+
+    // Higher digit
+
+    dec += 10 * (bcd >> 4);
+
+    return dec;
+
+}
+
+
+void setrgb(int rgb) {
+
+    uint8_t b = bcd2dec(rgb & 0xFF);
+
+    uint8_t g = bcd2dec((rgb >> 8) & 0xFF);
+
+    uint8_t r = bcd2dec((rgb >> 16) & 0xFF);
+    
+
+    // TODO: Assign values to TIM1->CCRx registers
+
+    // Remember these are all percentages
+
+    // Also, LEDs are on when the corresponding PWM output is low
+
+    // so you might want to invert the numbers.
+
+
+    //uint32_t ARR = TIM2->ARR + 1; //was originally tim1
+
+
+    TIM1->CCR1 = (100 - rgb) / 100; 
+    //TIM2->CCR1 = ARR * (100 - rgb) / 100; 
+
+    //TIM1->CCR2 = ARR * (100 - g) / 100;
+
+    //TIM1->CCR3 = ARR * (100 - b) / 100;
+
+}
+
 void togglexn(GPIO_TypeDef *port, int n) {
   if (port->ODR & (1 << n)){
     port->ODR &= ~(1 << n);
@@ -114,16 +213,17 @@ void TIM2_IRQHandler(void) {
 
     temperature = ADC1->DR;
     brightness = ADC1->DR; 
-    brightness -= 2000;
+    brightness = brightness / 450;
     if (brightness < 0) brightness = 0;
-    //brightness *= 2;
-    brightness = brightness % 1000;
+    else if (brightness > 500) brightness = 500;
     
-    if (brightness < 250){
+    if (brightness < 4.5){
         setn(3, 1);
+        setrgb(0x000000);
     }
     else{
         setn(3, 0);
+        setrgb(~0xf);
     }
 
     // handle_fan(temperature, fan_status);
@@ -242,7 +342,7 @@ int main(void) {
   init_tim2();
 
   //sprintf("%d", temperature); 
-
+  setup_tim1();
   init_spi1();
   spi1_init_oled();
   //spi1_display1("Hello again,");
