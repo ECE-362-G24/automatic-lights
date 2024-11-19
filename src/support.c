@@ -126,15 +126,15 @@ void update_history(int c, int rows)
     }
 }
 
-void drive_column(int c)
-{
-    GPIOC->BSRR = 0xf00000 | ~(1 << (c + 4));
-}
+// void drive_column(int c)
+// {
+//     GPIOC->BSRR = 0xf00000 | ~(1 << (c + 4));
+// }
 
-int read_rows()
-{
-    return (~GPIOC->IDR) & 0xf;
-}
+// int read_rows()
+// {
+//     return (~GPIOC->IDR) & 0xf;
+// }
 
 char get_key_event(void) {
     for(;;) {

@@ -18,17 +18,17 @@ const char* username = "kdtaneja";
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
 //void autotest();
 
-void nano_wait(int);
 uint32_t temperature = 0;
 uint32_t brightness = 0;
 int fan_status = 0;
 int led_status = 1;
-int channel_no = 1;
-
+uint8_t mode = 'C';
+uint8_t col = 0;
+char keymap;
+char* keymap_arr = &keymap;
 //===========================================================================
 // Configure GPIOC
 //===========================================================================
@@ -39,10 +39,6 @@ void enable_ports(void) {
     //  3-Output fan
     //  4-Output LED
     RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOCEN;
-
-    GPIOC->MODER |= 0x00055500; //set PC4-PC9 as O/P
-    GPIOC->PUPDR |= 0x000000AA; //Set PC0-PC3 as O/P w/ pull-down resistors   
-
     //resetting all ports and setting 2-3 for output
     GPIOA->MODER &= ~0x00ff03fc;
     GPIOA->MODER |= 0x0015017c;
@@ -54,6 +50,12 @@ void enable_ports(void) {
     //Pin 8 -> 01
     //Pin 9 -> 01
     //Pin 10 -> 01
+
+    GPIOC->MODER &= ~(0x000000FF); //Clear mode bits for PC0-PC3 (input mode is 00)
+    GPIOC->PUPDR &= ~(0x000000FF); //Clear the pull-up/pull-down bits for PC0-PC3
+    GPIOC->PUPDR |= 0x000000AA; //Set PC0-PC3 to be internally pulled down (10)
+    GPIOC->MODER &= ~(0x0000FF00); //Clear mode bits for PC4-PC7
+    GPIOC->MODER |= 0x00005500; //Set PC4-PC7 as outputs
     //  ADC FOR PORTS 1-2
     //enabling high speed clock
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
@@ -69,7 +71,6 @@ void enable_ports(void) {
     //selecting channel 1
     //ADC1->CHSELR = ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL2; 
     //ADC1->CFGR1 &= ~ADC_CFGR1_RES; //NOT SURE IF WE NEED THIS 
-
 }
 
 
@@ -78,35 +79,35 @@ int bcsum = 0;
 int boxcar[BCSIZE];
 int bcn = 0;
 
-void handle_fan(int temp, int fan){
-    if(fan){
-        if(temp < 20){
-            setn(3,0);
-            fan = 0;
-        }
-    }
-    else{
-        if(temp > 25){
-            setn(3,1);
-            fan = 1;
-        }
-    }
-}
+// void handle_fan(int temp, int fan){
+//     if(fan){
+//         if(temp < 20){
+//             setn(3,0);
+//             fan = 0;
+//         }
+//     }
+//     else{
+//         if(temp > 25){
+//             setn(3,1);
+//             fan = 1;
+//         }
+//     }
+// }
 
-void handle_led(int bright, int led){
-    if(led){
-        if(bright > 300){
-            setn(4,0);
-            led = 0;
-        }
-    }
-    else{
-        if(bright < 200){
-            setn(4,1);
-            led = 1;
-        }
-    }
-}
+// void handle_led(int bright, int led){
+//     if(led){
+//         if(bright > 300){
+//             setn(4,0);
+//             led = 0;
+//         }
+//     }
+//     else{
+//         if(bright < 200){
+//             setn(4,1);
+//             led = 1;
+//         }
+//     }
+// }
 
 void setup_tim1(void) {
 
@@ -119,6 +120,8 @@ void setup_tim1(void) {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
 
     RCC->AHBENR  |= RCC_AHBENR_GPIOAEN;
+
+    
 
     GPIOA->MODER &= ~(GPIO_MODER_MODER8 | GPIO_MODER_MODER9 | GPIO_MODER_MODER10 | GPIO_MODER_MODER11);
 
@@ -208,50 +211,107 @@ void togglexn(GPIO_TypeDef *port, int n) {
   }
 }
 
+void write_display() {
+    char str_2[12];
+    char str_3[12];
+    setn(3, 0);    
+    switch (mode){
+    case ('C'):
+      spi1_display1("Press A- Bright");
+      spi1_display2("Press B- Temp");
+      break;    
+
+    case('A'):
+    ADC1->CHSELR &= ~ADC_CHSELR_CHSEL2;
+    ADC1->CHSELR = ADC_CHSELR_CHSEL1;
+    brightness = ADC1->DR;
+    if (brightness < 600){
+        setn(3, 1);
+        setrgb(0x000000);
+    }
+    else{
+        setn(3, 0);
+        setrgb(~0xf);
+    }
+    spi1_display1("                ");
+    spi1_display2("                ");
+    itoa(brightness, str_2, 10);
+    char temp_str_2[50] = "Bright: "; //temp_str_2 == temporary string 2
+    strcat(temp_str_2, str_2);
+    spi1_display1(temp_str_2);
+    break;
+
+    case('B'):
+    ADC1->CHSELR &= ~ADC_CHSELR_CHSEL1;
+    ADC1->CHSELR = ADC_CHSELR_CHSEL2;
+    temperature = ADC1->DR;
+    spi1_display1("                ");
+    spi1_display2("                ");
+    float calc_temp = temperature * 4.88;
+    calc_temp /= 100;
+    float tempF = calc_temp * 1.8 + 32; //TEMPERATURE IN FAHRENHEIT
+    if (tempF > 76){
+        setn(3, 1);
+        setrgb(0x000000);
+    }
+    else{
+        setn(3, 0);
+        setrgb(~0xf);
+    }
+    itoa(tempF, str_3, 10); //should be temperature
+    char temp_str_3[50] = "Temp: "; //temp_str_2 == temporary string 2
+    strcat(temp_str_3, str_3);
+    spi1_display1(temp_str_3);
+    break;
+  }
+}
+
 void TIM2_IRQHandler(void) {
     TIM2->SR &= ~TIM_SR_UIF;  
     ADC1->CR |= ADC_CR_ADSTART;
     //DO STUFF
     while ((ADC1->ISR & ADC_ISR_EOC) == 0) {
     }
+
+    // if (brightness >= 1000) brightness = 999;
     
-    if (channel_no == 1) {
-        ADC1->CHSELR = ADC_CHSELR_CHSEL1;
-        brightness = ADC1->DR; 
-        //brightness = brightness / 1000;
-        //if (brightness < 0) brightness = 0;
-        if (brightness >= 1000) brightness = 999;
-        
-        if (brightness < 600){
-            setn(3, 1);
-            setrgb(0x000000);
-        }
-        else{
-            setn(3, 0);
-            setrgb(~0xf);
-        }
+    // if (brightness < 600){
+    //     setn(3, 1);
+    //     setrgb(0x000000);
+    // }
+    // else{
+    //     setn(3, 0);
+    //     setrgb(~0xf);
+    // }
 
-        char str_2[12];
-        itoa(brightness, str_2, 10);
-        char temp_str_2[50] = "Bright: "; //temp_str_2 == temporary string 2
-        strcat(temp_str_2, str_2);
-        spi1_display1(temp_str_2);
-    }
+    // if (brightness >= 1000) brightness = 999;
+    
+    // if (brightness < 600){
+    //     setn(3, 1);
+    //     setrgb(0x000000);
+    // }
+    // else{
+    //     setn(3, 0);
+    //     setrgb(~0xf);
+    // }
 
-    else if (channel_no == 2) {
-        ADC1->CHSELR = ADC_CHSELR_CHSEL2;
-        temperature = ADC1->DR;
-        char str[12];
-        itoa(temperature, str, 10);
-        char temp_str[50] = "Temp: ";
-        strcat(temp_str, str);
-        spi1_display2(temp_str); 
-    }
+    // char str_2[12];
+    // itoa(brightness, str_2, 10);
+    // char temp_str_2[50] = "Bright: "; //temp_str_2 == temporary string 2
+    // strcat(temp_str_2, str_2);
+    // spi1_display1(temp_str_2);
 
     // ADC1->CHSELR = ADC_CHSELR_CHSEL2;
     // temperature = ADC1->DR;
     // // handle_fan(temperature, fan_status);
-    // // handle_led(brightness, led_status);    
+    // // handle_led(brightness, led_status);
+
+    // char str[12];
+    // itoa(temperature, str, 10);
+    // char temp_str[50] = "Temp: ";
+    // strcat(temp_str, str);
+    // spi1_display2(temp_str); 
+    
 }
 
 void setn(int32_t pin_num, int32_t val) {
@@ -336,88 +396,126 @@ void spi1_display2(const char *string) {
     }
 }
 
-//=============================================================================
+char rows_to_key(int rows) {
 
-// Part 2: Debounced keypad scanning.
+  int row = -1;
+  if (rows & 0x01) row = 0;
+  else if (rows & 0x02) row = 1;  
+  else if (rows & 0x04) row = 2;  
+  else if (rows & 0x08) row = 3;  
+  if (row == -1) return 0;
+  int column = col & 0x03;  
+  int offset = column * 4 + row;
+  return keymap_arr[offset];
 
-//=============================================================================
-uint8_t col; // the column being scanned
+}
 
-void drive_column(int);   // energize one of the column outputs
-int  read_rows();         // read the four row inputs
-void update_history(int col, int rows); // record the buttons of the driven column
-char get_key_event(void); // wait for a button event (press or release)
-char get_keypress(void);  // wait for only a button press event.
-float getfloat(void);     // read a floating-point number from keypad
-void show_keys(void);     // demonstrate get_key_event()
-//============================================================================
+int read_rows() {
 
-// The Timer 7 ISR
+  return GPIOC->IDR & 0x0F;
 
-//============================================================================
+}
 
-// Write the Timer 7 ISR here.  Be sure to give it the right name.
+void handle_key(char key) {
+
+  if (key == 'A' || key == 'B' || key == 'C') {
+      mode = key;  
+  }
+}
+
+void drive_column(int c) {
+
+  c = c & 0x03;  
+
+  GPIOC->BSRR = (0xF << 4) << 16;  
+
+  GPIOC->BSRR = (1 << (c + 4));  
+
+}
+
+
+char disp[9] = "Hello...";
 
 void TIM7_IRQHandler(void) {
+
     TIM7->SR &= ~TIM_SR_UIF;
     int rows = read_rows();
-    update_history(col, rows);
-    col = (col + 1) & 0x03;
+    if (rows != 0) {
+        char key = rows_to_key(rows);
+        handle_key(key);
+    }
+
+    col = (col + 1) % 8;
     drive_column(col);
 }
 
 
-//============================================================================
+/**
 
-// init_tim7()
+ * @brief Setup timer 7 as described in lab handout
 
-//============================================================================
+ * 
 
-void init_tim7(void) {
+ */
+
+void setup_tim7() {
+
     RCC->APB1ENR |= RCC_APB1ENR_TIM7EN;
-    TIM7->PSC = 47999;
-    TIM7->ARR = 1 - 1;
+    TIM7->PSC = 47;   
+    TIM7->ARR = 999;
     TIM7->DIER |= TIM_DIER_UIE;
-    TIM7->SR &= ~TIM_SR_UIF;
-    TIM7->CR1 |= TIM_CR1_CEN;
     NVIC_EnableIRQ(TIM7_IRQn);
+    TIM7->CR1 |= TIM_CR1_CEN;
+}
+
+void TIM14_IRQHandler(void) {
+  TIM14->SR &= ~TIM_SR_UIF;
+  //update_variables();
+  write_display();
+}
+
+/**
+ * @brief Setup timer 14 as described in lab
+ *        handout
+ * 
+ */
+
+void setup_tim14() {
+  RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;
+  TIM14->PSC = 47999; 
+  TIM14->ARR = 499;    
+  TIM14->DIER |= TIM_DIER_UIE;
+  NVIC_EnableIRQ(TIM14_IRQn);
+  TIM14->CR1 |= TIM_CR1_CEN;
 }
 
 //===========================================================================
 // Main function
 //===========================================================================
+
 int main(void) {
-    internal_clock();
-    // GPIO enable
-    enable_ports();
-    // setup keyboard
-    for (;;){
-        char key = get_keypress();
-        if (key == 'A'){
-            channel_no = 1;
-        }
-        else if (key == 'B'){
-            channel_no = 2;
-        }
-    }
-    init_tim2();
-    init_tim7();
+  internal_clock();
+  // GPIO enable
+  enable_ports();
+  // setup keyboard
+  setup_tim14();
+  setup_tim7();
+  init_tim2();
 
-    //sprintf("%d", temperature); 
-    setup_tim1();
-    init_spi1();
-    spi1_init_oled();
-    //spi1_display1("Hello again,");
-    //const char temp_str = "test";
-    // char temp_str = "test";
-    // if (temperature == 35){
-    //   temp_str = "35";
-    // }
-    //spi1_display2("50");
+  //sprintf("%d", temperature); 
+  setup_tim1();
+  init_spi1();
+  spi1_init_oled();
+  //spi1_display1("Hello again,");
+  //const char temp_str = "test";
+  // char temp_str = "test";
+  // if (temperature == 35){
+  //   temp_str = "35";
+  // }
+  //spi1_display2("50");
 
-    //uint32_t x;
+  //uint32_t x;
 
 }
-
 
 
