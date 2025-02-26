@@ -9,18 +9,14 @@ sarkar51
 Banerj61
 Kdtaneja
 acavouni
- 
-**Please provide a brief description of your project and what it will be able to do, and specify four specific but concise objectives for your project: **
 
 Our project is designed to automate lighting and temperature regulation. It will adjust the RGB LED based on the ambient light and will also control the speed of a fan based on room temperature (NOTE: Not sure how we will show the temperature regulation during the demo). 
-.
+
 Based on this, our four objectives for this project are:
 Automatically adjust RGB LED lighting based on ambient light conditions.
 Activate/deactivate fan based on room temperature- Turns on when temperature crosses 75 F.      
 Enable user input using a keypad, with the chosen input displayed on seven-segment displays
 Manually override RGB LED color based on keypad input, use keypad to reset to automatic color control. 
-
-What are the main features of your project? Describe the hardware you plan to use, what parts you wish to acquire (include purchase links for non-kit-based parts), and what your code will do to make the project work:
 
 The main features are:
 Automatic Lighting Control: Adjust RGB LED based on ambient brightness
@@ -29,15 +25,13 @@ Interactive Color Selection via Keypad: Select different lighting colors by inpu
 Seven-Segment Display Feedback: Two seven-segment displays provide real-time feedback by showing the buttons pressed on keypad. 
 OLED display:  Shows current ambient brightness and current room temperature. 
 	
-	The hardware that we plan to use is:
+The hardware that we plan to use is:
 RGB LED
 OLED Display
 Fan
-https://www.amazon.com/GeeekPi-Raspberry-Controllable-Adjustment-40x40x10mm/dp/B092YXQMX5/ref=sr_1_2?sr=8-2
+Ambient Light Sensor (TEMT6000 )
 
-Ambient Light Sensor (TEMT6000 )- https://www.amazon.com/HiLetgo-TEMT6000-Sensor-Professional-Arduino/dp/B07WDW9BHD/ref=sr_1_1?sr=8-1
-
-Temperature Sensor (LM35) - https://www.amazon.com/Bridgold-Analogue-Precision-Centigrade-Temperature/dp/B07Y7FCZYB/ref=sr_1_2?sr=8-2
+Temperature Sensor (LM35)
 
 
 Keypad
@@ -76,10 +70,11 @@ November 13th
 Project integrated, start testing and optimizing
 November 15th
 Have final testing completed
-List some related published projects, products, or articles that you found that are similar to your project. Provide links to them if possible. Does your project do anything better or different? If so, what?
 
 
-DIY Ambient Light Sensor and LED Control- https://www.instructables.com/Ambient-Light-Controlled-LED/
+Similar Projects- 
+
+DIY Ambient Light Sensor and LED Control- https://www.instructables.com/Ambient-Light-Controlled-LED
 
 Smart Home Temperature Control- https://projecthub.arduino.cc/kirby-b/automatic-fan-to-cool-your-room-be8164
 
