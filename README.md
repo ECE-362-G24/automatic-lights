@@ -1,18 +1,9 @@
-# automatic-lights
-Group 24's ECE 362 project automating light and temperature regulation using the STM32
+# Automatic-Lights
+Automating Light and Temperature Regulation using the STM32
 
-**Group Name:**
-Automatic Lights 
+The project is designed to automate lighting and temperature regulation. It will adjust the RGB LED based on the ambient light and will also control the speed of a fan based on room temperature 
 
-**Purdue Username:**
-sarkar51
-Banerj61
-Kdtaneja
-acavouni
-
-Our project is designed to automate lighting and temperature regulation. It will adjust the RGB LED based on the ambient light and will also control the speed of a fan based on room temperature (NOTE: Not sure how we will show the temperature regulation during the demo). 
-
-Based on this, our four objectives for this project are:
+Based on this, the four objectives for this project are:
 Automatically adjust RGB LED lighting based on ambient light conditions.
 Activate/deactivate fan based on room temperature- Turns on when temperature crosses 75 F.      
 Enable user input using a keypad, with the chosen input displayed on seven-segment displays
@@ -46,11 +37,7 @@ Display input text on the seven-segment
 Read the inputs from the sensor
 Automatically control the RGB and fan speed based on ambient temperature and lighting
 
-Provide at least two of the external interface formats your project will use: 
-GPIO- Reading input.
-PWM- Controlling the RGB LED and fan speed.
-
-Provide at least four of the internal peripheral subsystems your project will use:
+Uses: 
 ADC- To read analog data from the ambient light and temperature sensors
 Timers: To generate PWM signals and manage timing for various control tasks
  GPIO-  To read inputs from the keypad to select color for RGB LED, and to control the fan. 
@@ -71,13 +58,9 @@ Project integrated, start testing and optimizing
 November 15th
 Have final testing completed
 
-
 Similar Projects- 
-
 DIY Ambient Light Sensor and LED Control- https://www.instructables.com/Ambient-Light-Controlled-LED
-
 Smart Home Temperature Control- https://projecthub.arduino.cc/kirby-b/automatic-fan-to-cool-your-room-be8164
-
 Smart RGB LED Projects-
 https://www.hackster.io/thingstudio/pwm-control-of-rgb-led-with-esp8266-and-blynk-2c40d7
 
